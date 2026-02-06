@@ -91,6 +91,12 @@ async def health_check():
         raise HTTPException(status_code=500, detail="Service health check failed")
 
 
+@app.get("/health", response_model=HealthResponse)
+async def health_check_root():
+    """Health check endpoint (alias for /api/health for backward compatibility)"""
+    return await health_check()
+
+
 @app.get("/api/voices", response_model=VoicesResponse)
 async def get_voices():
     """Get list of available voices"""
