@@ -99,11 +99,12 @@ class Qwen3TTSModelManager:
         
         try:
             # Load model with optimized settings
+            # Use eager attention (flash_attention_2 requires flash-attn package)
             model = Qwen3TTSModel.from_pretrained(
                 model_id,
                 device_map=self.device,
                 dtype=self.dtype,
-                attn_implementation="flash_attention_2" if device_manager.is_cuda_available() else "eager",
+                attn_implementation="eager",
             )
             self.models[model_type] = model
             logger.info(f"Successfully loaded {model_type} model ({self.model_size})")
