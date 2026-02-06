@@ -1,0 +1,17 @@
+__pycache__
+*.pyc
+*.pyo
+*.egg-info
+.env
+.git
+.gitignore
+.pytest_cache
+.vscode
+.idea
+*.log
+node_modules
+dist
+build
+.DS_Store
+*.swp
+*.swo

@@ -1,0 +1,949 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen3-TTS Web UI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --secondary: #ec4899;
+            --background: #0f172a;
+            --surface: #1e293b;
+            --surface-light: #334155;
+            --text: #f1f5f9;
+            --text-secondary: #cbd5e1;
+            --border: #475569;
+            --success: #10b981;
+            --error: #ef4444;
+            --warning: #f59e0b;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, var(--background) 0%, #1a1f3a 100%);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            background: linear-gradient(135deg, var(--primary) 0%, var(--secondary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+
+        header p {
+            color: var(--text-secondary);
+            font-size: 1.1em;
+        }
+
+        .main-content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            margin-bottom: 40px;
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        .panel {
+            background: var(--surface);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+        }
+
+        .panel h2 {
+            font-size: 1.5em;
+            margin-bottom: 20px;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            color: var(--text);
+        }
+
+        input[type="text"],
+        input[type="number"],
+        input[type="file"],
+        textarea,
+        select {
+            width: 100%;
+            padding: 12px;
+            background: var(--surface-light);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            color: var(--text);
+            font-size: 1em;
+            font-family: inherit;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        input[type="number"]:focus,
+        input[type="file"]:focus,
+        textarea:focus,
+        select:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.1);
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+            font-family: inherit;
+        }
+
+        .slider-group {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .slider-item {
+            flex: 1;
+        }
+
+        .slider-item input[type="range"] {
+            width: 100%;
+            height: 6px;
+            background: var(--surface-light);
+            border: none;
+            border-radius: 3px;
+            outline: none;
+            -webkit-appearance: none;
+        }
+
+        .slider-item input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+
+        .slider-item input[type="range"]::-webkit-slider-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        .slider-item input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: var(--primary);
+            cursor: pointer;
+            border: none;
+            transition: background 0.3s;
+        }
+
+        .slider-item input[type="range"]::-moz-range-thumb:hover {
+            background: var(--primary-dark);
+        }
+
+        .slider-value {
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .tab-button {
+            padding: 12px 20px;
+            background: transparent;
+            border: none;
+            color: var(--text-secondary);
+            cursor: pointer;
+            font-size: 1em;
+            font-weight: 500;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+
+        .tab-button.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-button:hover {
+            color: var(--text);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 25px;
+        }
+
+        button {
+            flex: 1;
+            padding: 14px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(99, 102, 241, 0.3);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: var(--surface-light);
+            color: var(--text);
+            border: 1px solid var(--border);
+        }
+
+        .btn-secondary:hover {
+            background: var(--border);
+        }
+
+        .btn-success {
+            background: var(--success);
+            color: white;
+        }
+
+        .btn-success:hover {
+            opacity: 0.9;
+        }
+
+        .btn-danger {
+            background: var(--error);
+            color: white;
+        }
+
+        .btn-danger:hover {
+            opacity: 0.9;
+        }
+
+        button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            display: none;
+        }
+
+        .status.show {
+            display: block;
+        }
+
+        .status.success {
+            background: rgba(16, 185, 129, 0.1);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .status.error {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid var(--error);
+            color: var(--error);
+        }
+
+        .status.info {
+            background: rgba(99, 102, 241, 0.1);
+            border: 1px solid var(--primary);
+            color: var(--primary);
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 40px;
+            height: 40px;
+            border: 4px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .audio-player {
+            background: var(--surface-light);
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .audio-player.show {
+            display: block;
+        }
+
+        audio {
+            width: 100%;
+            margin-bottom: 15px;
+        }
+
+        .audio-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .audio-actions button {
+            flex: 1;
+        }
+
+        .footer {
+            text-align: center;
+            color: var(--text-secondary);
+            padding-top: 30px;
+            border-top: 1px solid var(--border);
+            margin-top: 40px;
+        }
+
+        .info-box {
+            background: rgba(99, 102, 241, 0.1);
+            border-left: 4px solid var(--primary);
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-size: 0.95em;
+        }
+
+        .char-count {
+            font-size: 0.9em;
+            color: var(--text-secondary);
+            margin-top: 5px;
+        }
+
+        .error-detail {
+            background: rgba(239, 68, 68, 0.05);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 4px;
+            padding: 10px;
+            margin-top: 10px;
+            font-size: 0.9em;
+            font-family: monospace;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+            width: 100%;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            display: block;
+            padding: 12px;
+            background: var(--surface-light);
+            border: 2px dashed var(--border);
+            border-radius: 8px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s;
+            color: var(--text-secondary);
+        }
+
+        .file-input-label:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+            background: rgba(99, 102, 241, 0.05);
+        }
+
+        .file-input-label.drag-over {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.1);
+        }
+
+        .file-name {
+            color: var(--success);
+            font-size: 0.9em;
+            margin-top: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1>🎙️ Qwen3-TTS</h1>
+            <p>Advanced Text-to-Speech with Voice Cloning & Design</p>
+        </header>
+
+        <div class="main-content">
+            <!-- Input Panel -->
+            <div class="panel">
+                <h2>📝 Input</h2>
+                
+                <div class="tabs">
+                    <button class="tab-button active" data-tab="custom-voice">Custom Voice</button>
+                    <button class="tab-button" data-tab="voice-design">Voice Design</button>
+                    <button class="tab-button" data-tab="voice-clone">Voice Clone</button>
+                </div>
+
+                <!-- Custom Voice Tab -->
+                <div class="tab-content active" id="custom-voice">
+                    <div class="info-box">
+                        Use pre-built voices with optional emotion/tone control
+                    </div>
+
+                    <div class="form-group">
+                        <label for="text-custom">Text to Synthesize</label>
+                        <textarea id="text-custom" placeholder="Enter text to convert to speech..." maxlength="1000"></textarea>
+                        <div class="char-count"><span id="char-count-custom">0</span>/1000</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="voice-select">Voice</label>
+                        <select id="voice-select">
+                            <option value="">Loading voices...</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="language-custom">Language</label>
+                        <select id="language-custom">
+                            <option value="Auto">Auto Detect</option>
+                            <option value="Chinese">Chinese (Mandarin)</option>
+                            <option value="English">English</option>
+                            <option value="Japanese">Japanese</option>
+                            <option value="Korean">Korean</option>
+                            <option value="German">German</option>
+                            <option value="French">French</option>
+                            <option value="Russian">Russian</option>
+                            <option value="Portuguese">Portuguese</option>
+                            <option value="Spanish">Spanish</option>
+                            <option value="Italian">Italian</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="instruction">Voice Instruction (Optional)</label>
+                        <textarea id="instruction" placeholder="e.g., 'Speak with anger', 'Use a happy tone'..." maxlength="500"></textarea>
+                    </div>
+
+                    <div class="slider-group">
+                        <div class="slider-item">
+                            <label for="speed">Speed</label>
+                            <input type="range" id="speed" min="0.5" max="2.0" step="0.1" value="1.0">
+                            <div class="slider-value"><span id="speed-value">1.0</span>x</div>
+                        </div>
+                        <div class="slider-item">
+                            <label for="pitch">Pitch</label>
+                            <input type="range" id="pitch" min="0.5" max="2.0" step="0.1" value="1.0">
+                            <div class="slider-value"><span id="pitch-value">1.0</span>x</div>
+                        </div>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="synthesizeCustomVoice()">🎵 Synthesize</button>
+                    </div>
+                </div>
+
+                <!-- Voice Design Tab -->
+                <div class="tab-content" id="voice-design">
+                    <div class="info-box">
+                        Describe your desired voice in natural language
+                    </div>
+
+                    <div class="form-group">
+                        <label for="text-design">Text to Synthesize</label>
+                        <textarea id="text-design" placeholder="Enter text to convert to speech..." maxlength="1000"></textarea>
+                        <div class="char-count"><span id="char-count-design">0</span>/1000</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="voice-description">Voice Description</label>
+                        <textarea id="voice-description" placeholder="Describe the voice (e.g., 'Warm elderly male with slight accent', 'Young excited female voice')" maxlength="500"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="language-design">Language</label>
+                        <select id="language-design">
+                            <option value="Auto">Auto Detect</option>
+                            <option value="Chinese">Chinese (Mandarin)</option>
+                            <option value="English">English</option>
+                            <option value="Japanese">Japanese</option>
+                            <option value="Korean">Korean</option>
+                            <option value="German">German</option>
+                            <option value="French">French</option>
+                            <option value="Russian">Russian</option>
+                            <option value="Portuguese">Portuguese</option>
+                            <option value="Spanish">Spanish</option>
+                            <option value="Italian">Italian</option>
+                        </select>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="synthesizeVoiceDesign()">🎵 Synthesize</button>
+                    </div>
+                </div>
+
+                <!-- Voice Clone Tab -->
+                <div class="tab-content" id="voice-clone">
+                    <div class="info-box">
+                        Clone a voice from reference audio (3+ seconds recommended)
+                    </div>
+
+                    <div class="form-group">
+                        <label for="text-clone">Text to Synthesize</label>
+                        <textarea id="text-clone" placeholder="Enter text to convert to speech..." maxlength="1000"></textarea>
+                        <div class="char-count"><span id="char-count-clone">0</span>/1000</div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reference-audio">Reference Audio</label>
+                        <div class="file-input-wrapper">
+                            <input type="file" id="reference-audio" accept="audio/*">
+                            <label class="file-input-label" for="reference-audio">
+                                <div>📁 Click or drag audio file here</div>
+                                <div style="font-size: 0.9em; margin-top: 5px;">Supported: WAV, MP3, OGG (3+ seconds)</div>
+                            </label>
+                            <div class="file-name" id="ref-audio-name"></div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="reference-text">Reference Text</label>
+                        <textarea id="reference-text" placeholder="Transcription of the reference audio..." maxlength="500"></textarea>
+                    </div>
+
+                    <div class="form-group">
+                        <label for="language-clone">Language</label>
+                        <select id="language-clone">
+                            <option value="Auto">Auto Detect</option>
+                            <option value="Chinese">Chinese (Mandarin)</option>
+                            <option value="English">English</option>
+                            <option value="Japanese">Japanese</option>
+                            <option value="Korean">Korean</option>
+                            <option value="German">German</option>
+                            <option value="French">French</option>
+                            <option value="Russian">Russian</option>
+                            <option value="Portuguese">Portuguese</option>
+                            <option value="Spanish">Spanish</option>
+                            <option value="Italian">Italian</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group">
+                        <label>
+                            <input type="checkbox" id="x-vector-only" style="width: auto; margin-right: 10px;">
+                            <span>X-Vector Only Mode (faster, lower quality)</span>
+                        </label>
+                    </div>
+
+                    <div class="button-group">
+                        <button class="btn-primary" onclick="synthesizeVoiceClone()">🎵 Synthesize</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Output Panel -->
+            <div class="panel">
+                <h2>🔊 Output</h2>
+
+                <div id="status-message" class="status"></div>
+
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    <p style="margin-top: 15px;">Generating audio...</p>
+                </div>
+
+                <div id="audio-player" class="audio-player">
+                    <audio id="audio-element" controls></audio>
+                    <div class="audio-actions">
+                        <button class="btn-success" onclick="downloadAudio()">📥 Download</button>
+                        <button class="btn-secondary" onclick="clearAudio()">🗑️ Clear</button>
+                    </div>
+                </div>
+
+                <div id="system-info" style="margin-top: 30px; padding-top: 20px; border-top: 1px solid var(--border);">
+                    <h3 style="margin-bottom: 15px; color: var(--text-secondary);">📊 System Info</h3>
+                    <div id="system-details" style="font-size: 0.9em; color: var(--text-secondary); line-height: 1.8;">
+                        Loading system information...
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <footer class="footer">
+            <p>Qwen3-TTS API v1.0.0 | Powered by Alibaba Qwen</p>
+        </footer>
+    </div>
+
+    <script>
+        const API_URL = 'http://localhost:8000/api';
+        let currentAudioBlob = null;
+
+        // Tab switching
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                const tabName = button.getAttribute('data-tab');
+                
+                // Hide all tabs
+                document.querySelectorAll('.tab-content').forEach(tab => {
+                    tab.classList.remove('active');
+                });
+                
+                // Remove active from all buttons
+                document.querySelectorAll('.tab-button').forEach(btn => {
+                    btn.classList.remove('active');
+                });
+                
+                // Show selected tab
+                document.getElementById(tabName).classList.add('active');
+                button.classList.add('active');
+            });
+        });
+
+        // Character count
+        ['custom', 'design', 'clone'].forEach(type => {
+            const textarea = document.getElementById(`text-${type}`);
+            textarea.addEventListener('input', () => {
+                document.getElementById(`char-count-${type}`).textContent = textarea.value.length;
+            });
+        });
+
+        // Slider value display
+        ['speed', 'pitch'].forEach(id => {
+            const slider = document.getElementById(id);
+            slider.addEventListener('input', () => {
+                document.getElementById(`${id}-value`).textContent = slider.value;
+            });
+        });
+
+        // File input handling
+        const fileInput = document.getElementById('reference-audio');
+        const fileLabel = document.querySelector('.file-input-label');
+
+        fileInput.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                document.getElementById('ref-audio-name').textContent = '✓ ' + e.target.files[0].name;
+            }
+        });
+
+        fileLabel.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileLabel.classList.add('drag-over');
+        });
+
+        fileLabel.addEventListener('dragleave', () => {
+            fileLabel.classList.remove('drag-over');
+        });
+
+        fileLabel.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileLabel.classList.remove('drag-over');
+            if (e.dataTransfer.files.length > 0) {
+                fileInput.files = e.dataTransfer.files;
+                document.getElementById('ref-audio-name').textContent = '✓ ' + e.dataTransfer.files[0].name;
+            }
+        });
+
+        // Load voices on startup
+        async function loadVoices() {
+            try {
+                const response = await fetch(`${API_URL}/voices`);
+                const data = await response.json();
+                const voiceSelect = document.getElementById('voice-select');
+                voiceSelect.innerHTML = '';
+                
+                data.voices.forEach(voice => {
+                    const option = document.createElement('option');
+                    option.value = voice.id;
+                    option.textContent = `${voice.name} - ${voice.description}`;
+                    voiceSelect.appendChild(option);
+                });
+            } catch (error) {
+                showStatus('Failed to load voices', 'error');
+            }
+        }
+
+        // Load system info
+        async function loadSystemInfo() {
+            try {
+                const response = await fetch(`${API_URL}/health`);
+                const data = await response.json();
+                
+                let infoHtml = `
+                    <div>Status: <strong style="color: var(--success);">✓ ${data.status}</strong></div>
+                    <div>Device: <strong>${data.device}</strong></div>
+                    <div>CUDA Available: <strong>${data.cuda_available ? '✓ Yes' : '✗ No'}</strong></div>
+                `;
+                
+                if (data.gpu_memory_gb !== null) {
+                    infoHtml += `<div>GPU Memory Available: <strong>${data.gpu_memory_gb.toFixed(2)} GB</strong></div>`;
+                }
+                
+                document.getElementById('system-details').innerHTML = infoHtml;
+            } catch (error) {
+                document.getElementById('system-details').innerHTML = '<div style="color: var(--error);">Failed to load system info</div>';
+            }
+        }
+
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status-message');
+            statusDiv.textContent = message;
+            statusDiv.className = `status show ${type}`;
+            
+            if (type === 'success') {
+                setTimeout(() => {
+                    statusDiv.classList.remove('show');
+                }, 5000);
+            }
+        }
+
+        function showLoading(show = true) {
+            document.getElementById('loading').classList.toggle('show', show);
+        }
+
+        async function synthesizeCustomVoice() {
+            const text = document.getElementById('text-custom').value.trim();
+            const voice = document.getElementById('voice-select').value;
+            const language = document.getElementById('language-custom').value;
+            const instruction = document.getElementById('instruction').value.trim() || null;
+            const speed = parseFloat(document.getElementById('speed').value);
+            const pitch = parseFloat(document.getElementById('pitch').value);
+
+            if (!text) {
+                showStatus('Please enter text', 'error');
+                return;
+            }
+
+            if (!voice) {
+                showStatus('Please select a voice', 'error');
+                return;
+            }
+
+            showLoading(true);
+            showStatus('Generating audio...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/tts/custom-voice`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text,
+                        voice,
+                        language,
+                        instruction,
+                        speed,
+                        pitch
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const blob = await response.blob();
+                playAudio(blob);
+                showStatus('Audio generated successfully!', 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function synthesizeVoiceDesign() {
+            const text = document.getElementById('text-design').value.trim();
+            const voiceDescription = document.getElementById('voice-description').value.trim();
+            const language = document.getElementById('language-design').value;
+
+            if (!text) {
+                showStatus('Please enter text', 'error');
+                return;
+            }
+
+            if (!voiceDescription) {
+                showStatus('Please describe the voice', 'error');
+                return;
+            }
+
+            showLoading(true);
+            showStatus('Generating audio...', 'info');
+
+            try {
+                const response = await fetch(`${API_URL}/tts/voice-design`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        text,
+                        language,
+                        voice_description: voiceDescription
+                    })
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const blob = await response.blob();
+                playAudio(blob);
+                showStatus('Audio generated successfully!', 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        async function synthesizeVoiceClone() {
+            const text = document.getElementById('text-clone').value.trim();
+            const referenceAudio = document.getElementById('reference-audio').files[0];
+            const referenceText = document.getElementById('reference-text').value.trim();
+            const language = document.getElementById('language-clone').value;
+            const xVectorOnly = document.getElementById('x-vector-only').checked;
+
+            if (!text) {
+                showStatus('Please enter text', 'error');
+                return;
+            }
+
+            if (!referenceAudio) {
+                showStatus('Please select reference audio', 'error');
+                return;
+            }
+
+            if (!referenceText) {
+                showStatus('Please enter reference text', 'error');
+                return;
+            }
+
+            showLoading(true);
+            showStatus('Cloning voice and generating audio...', 'info');
+
+            try {
+                const formData = new FormData();
+                formData.append('text', text);
+                formData.append('reference_audio', referenceAudio);
+                formData.append('reference_text', referenceText);
+                formData.append('language', language);
+                formData.append('x_vector_only_mode', xVectorOnly);
+
+                const response = await fetch(`${API_URL}/tts/voice-clone`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+                const blob = await response.blob();
+                playAudio(blob);
+                showStatus('Audio generated successfully!', 'success');
+            } catch (error) {
+                showStatus(`Error: ${error.message}`, 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        function playAudio(blob) {
+            currentAudioBlob = blob;
+            const url = URL.createObjectURL(blob);
+            const audioElement = document.getElementById('audio-element');
+            audioElement.src = url;
+            document.getElementById('audio-player').classList.add('show');
+        }
+
+        function downloadAudio() {
+            if (!currentAudioBlob) return;
+            const url = URL.createObjectURL(currentAudioBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `audio_${Date.now()}.wav`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        function clearAudio() {
+            currentAudioBlob = null;
+            document.getElementById('audio-element').src = '';
+            document.getElementById('audio-player').classList.remove('show');
+        }
+
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            loadVoices();
+            loadSystemInfo();
+        });
+    </script>
+</body>
+</html>

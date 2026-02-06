@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  qwen-tts-api:
+    build:
+      context: .
+      dockerfile: docker/Dockerfile
+    container_name: qwen-tts-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./models:/models:cached
+      - ./output:/output
+      - ./logs:/logs
+    environment:
+      - PYTHONUNBUFFERED=1
+    networks:
+      - qwen-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/api/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+
+  frontend:
+    image: nginx:alpine
+    container_name: qwen-tts-frontend
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./frontend:/usr/share/nginx/html:ro
+      - ./docker/nginx.conf:/etc/nginx/nginx.conf:ro
+    depends_on:
+      - qwen-tts-api
+    networks:
+      - qwen-network
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+networks:
+  qwen-network:
+    driver: bridge
