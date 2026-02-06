@@ -6,6 +6,7 @@ services:
       context: .
       dockerfile: docker/Dockerfile
     container_name: qwen-tts-api
+    runtime: nvidia
     ports:
       - "8000:8000"
     volumes:
@@ -14,6 +15,14 @@ services:
       - ./logs:/logs
     environment:
       - PYTHONUNBUFFERED=1
+      - NVIDIA_VISIBLE_DEVICES=all
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
     networks:
       - qwen-network
     healthcheck:
