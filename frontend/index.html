@@ -585,7 +585,8 @@
 
                     <div class="form-group">
                         <label for="reference-text">Reference Text</label>
-                        <textarea id="reference-text" placeholder="Transcription of the reference audio..." maxlength="500"></textarea>
+                        <textarea id="reference-text" placeholder="Transcription of the reference audio..." maxlength="1000"></textarea>
+                        <div class="char-count"><span id="char-count-ref-text">0</span>/1000</div>
                     </div>
 
                     <div class="form-group">
@@ -683,6 +684,12 @@
             textarea.addEventListener('input', () => {
                 document.getElementById(`char-count-${type}`).textContent = textarea.value.length;
             });
+        });
+
+        // Reference text character count
+        const refTextarea = document.getElementById('reference-text');
+        refTextarea.addEventListener('input', () => {
+            document.getElementById('char-count-ref-text').textContent = refTextarea.value.length;
         });
 
         // Slider value display
