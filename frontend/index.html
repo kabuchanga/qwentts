@@ -651,8 +651,9 @@
         </footer>
     </div>
 
+    <script src="config.js"></script>
     <script>
-        const API_URL = 'http://107.170.45.213:8000/api';
+        const API_URL = window.API_URL || 'http://162.243.222.51:8000/api';
         let currentAudioBlob = null;
 
         // Tab switching
