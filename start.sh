@@ -1,10 +1,13 @@
 #!/bin/bash
 # Quick start script for Qwen3-TTS with Docker
+# This script runs in CPU mode by default
+# For GPU support, use start-gpu.sh instead
 
 set -e
 
-echo "🚀 Qwen3-TTS Quick Start"
-echo "========================"
+echo "🚀 Qwen3-TTS Quick Start (CPU Mode)"
+echo "======================================"
+echo "Note: For GPU support, use start-gpu.sh"
 echo ""
 
 # Check if Docker is installed

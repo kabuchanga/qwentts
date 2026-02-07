@@ -1,0 +1,16 @@
+# Docker Compose GPU Override
+# Use this file to enable GPU support
+# Usage: docker-compose -f docker-compose.yml -f docker-compose.gpu.yml up -d --build
+
+services:
+  qwen-tts-api:
+    environment:
+      - NVIDIA_VISIBLE_DEVICES=all
+      - MODEL_SIZE=${MODEL_SIZE:-1.7B}  # GPU mode default: 1.7B for better quality
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

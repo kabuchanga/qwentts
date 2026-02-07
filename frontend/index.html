@@ -654,7 +654,7 @@
 
     <script src="config.js"></script>
     <script>
-        const API_URL = window.API_URL || 'http://162.243.222.51:8000/api';
+        const API_URL = window.API_URL || '/api';
         let currentAudioBlob = null;
 
         // Tab switching
@@ -804,7 +804,7 @@
             }
 
             showLoading(true);
-            showStatus('Generating audio...', 'info');
+            showStatus('Generating audio... (First request may take 2-5 minutes to download and load models. Subsequent requests will be faster.)', 'info');
 
             try {
                 const response = await fetch(`${API_URL}/tts/custom-voice`, {
@@ -848,7 +848,7 @@
             }
 
             showLoading(true);
-            showStatus('Generating audio...', 'info');
+            showStatus('Designing voice and generating audio... (First request may take 2-5 minutes to download and load models.)', 'info');
 
             try {
                 const response = await fetch(`${API_URL}/tts/voice-design`, {
@@ -896,7 +896,7 @@
             }
 
             showLoading(true);
-            showStatus('Cloning voice and generating audio...', 'info');
+            showStatus('Designing voice and generating audio... (First request may take 2-5 minutes to download and load models.)', 'info');
 
             try {
                 const formData = new FormData();

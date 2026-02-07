@@ -1,11 +1,14 @@
 @echo off
 REM Quick start script for Qwen3-TTS with Docker (Windows)
+REM This script runs in CPU mode by default
+REM For GPU support, use start-gpu.bat instead
 
 setlocal enabledelayedexpansion
 
 echo.
-echo 🚀 Qwen3-TTS Quick Start
-echo ========================
+echo 🚀 Qwen3-TTS Quick Start (CPU Mode)
+echo ======================================
+echo Note: For GPU support, use start-gpu.bat
 echo.
 
 REM Check if Docker is installed

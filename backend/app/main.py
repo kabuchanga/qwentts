@@ -2,6 +2,7 @@
 Main FastAPI application for Qwen3-TTS API
 """
 import logging
+import asyncio
 from fastapi import FastAPI, HTTPException, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import StreamingResponse, FileResponse, JSONResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -56,12 +57,19 @@ async def startup_event():
     logger.info("Starting Qwen3-TTS API")
     logger.info(f"Device: {device_manager.get_device()}")
     logger.info(f"Device Info: {device_manager.get_device_info()}")
-    # Pre-load tokenizer and main model to reduce first request latency
-    try:
-        model_manager.load_tokenizer()
-        model_manager.load_model("custom_voice")
-    except Exception as e:
-        logger.warning(f"Startup pre-load skipped: {str(e)}")
+    # Pre-load tokenizer and main model in background to reduce first request latency
+    # This allows the server to start immediately while models load
+    async def background_model_load():
+        try:
+            await asyncio.to_thread(model_manager.load_tokenizer)
+            logger.info("Tokenizer loaded successfully")
+            await asyncio.to_thread(model_manager.load_model, "custom_voice")
+            logger.info("Custom voice model pre-loaded successfully")
+        except Exception as e:
+            logger.warning(f"Background model pre-load skipped: {str(e)}")
+    
+    # Start background loading without waiting
+    asyncio.create_task(background_model_load())
 
 
 @app.on_event("shutdown")
@@ -159,16 +167,19 @@ async def synthesize_custom_voice(request: TTSCustomVoiceRequest):
         
         logger.info(f"Synthesizing: '{request.text[:50]}...' with voice '{request.voice}'")
         
-        # Load model
+        # Load model (may take time on first request - downloading + loading)
+        logger.info("Loading custom_voice model (this may take a few minutes on first request)...")
         model = model_manager.load_model("custom_voice")
+        logger.info("Model loaded successfully, generating speech...")
         
-        # Generate speech
+        # Generate speech with optimization parameters
         with torch.no_grad():
             wavs, sr = model.generate_custom_voice(
                 text=request.text,
                 language=request.language,
                 speaker=request.voice,
                 instruct=request.instruction,
+                speed=request.speed,  # Speech speed control
             )
         
         audio_data = wavs[0]
@@ -210,10 +221,12 @@ async def synthesize_voice_design(request: TTSVoiceDesignRequest):
         logger.info(f"Voice design: '{request.text[:50]}...'")
         logger.info(f"Voice description: {request.voice_description[:100]}...")
         
-        # Load model
+        # Load model (may take time on first request)
+        logger.info("Loading voice_design model (this may take a few minutes on first request)...")
         model = model_manager.load_model("voice_design")
+        logger.info("Model loaded successfully, generating speech...")
         
-        # Generate speech
+        # Generate speech with optimization parameters
         with torch.no_grad():
             wavs, sr = model.generate_voice_design(
                 text=request.text,

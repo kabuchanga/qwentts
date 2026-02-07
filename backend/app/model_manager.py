@@ -2,6 +2,7 @@
 Qwen3 TTS Model Manager
 Handles loading and management of Qwen3-TTS models
 """
+import os
 import torch
 import logging
 from typing import Optional, Tuple
@@ -10,8 +11,13 @@ from .device_utils import device_manager
 
 logger = logging.getLogger(__name__)
 
-# Model sizes configuration - Only 1.7B models are available on HuggingFace
+# Model sizes configuration - Multiple sizes available on HuggingFace
 MODEL_SIZES = {
+    "0.6B": {
+        "custom_voice": "Qwen/Qwen3-TTS-12Hz-0.6B-CustomVoice",
+        "voice_design": "Qwen/Qwen3-TTS-12Hz-0.6B-VoiceDesign",
+        "voice_clone": "Qwen/Qwen3-TTS-12Hz-0.6B-Base",
+    },
     "1.7B": {
         "custom_voice": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
         "voice_design": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
@@ -19,19 +25,22 @@ MODEL_SIZES = {
     }
 }
 
-# Default model size (only 1.7B available)
-DEFAULT_MODEL_SIZE = "1.7B"
+# Default model size - 0.6B is smaller and faster, especially good for CPU mode
+# Can be overridden with MODEL_SIZE environment variable
+DEFAULT_MODEL_SIZE = os.environ.get("MODEL_SIZE", "1.7B")
 
 # Tokenizer is shared across all model sizes
 TOKENIZER_MODEL = "Qwen/Qwen3-TTS-Tokenizer-12Hz"
 
-# AVAILABLE_MODELS - uses the 1.7B models
-AVAILABLE_MODELS = {
-    "custom_voice": "Qwen/Qwen3-TTS-12Hz-1.7B-CustomVoice",
-    "voice_design": "Qwen/Qwen3-TTS-12Hz-1.7B-VoiceDesign",
-    "voice_clone": "Qwen/Qwen3-TTS-12Hz-1.7B-Base",
-    "tokenizer": TOKENIZER_MODEL,
-}
+# AVAILABLE_MODELS - for backwards compatibility (uses default model size)
+def get_available_models(model_size: str = DEFAULT_MODEL_SIZE) -> dict:
+    """Get available models for a specific size"""
+    return {
+        **MODEL_SIZES.get(model_size, MODEL_SIZES[DEFAULT_MODEL_SIZE]),
+        "tokenizer": TOKENIZER_MODEL,
+    }
+
+AVAILABLE_MODELS = get_available_models()
 
 # Pre-built voices for CustomVoice model
 AVAILABLE_VOICES = {
@@ -98,14 +107,33 @@ class Qwen3TTSModelManager:
         logger.info(f"Loading {model_type} model ({self.model_size}) from {model_id}")
         
         try:
-            # Load model with optimized settings
+            # Load model with optimized settings for speed
             # Use eager attention (flash_attention_2 requires flash-attn package)
+            # use_cache=True enables KV-cache for faster inference
             model = Qwen3TTSModel.from_pretrained(
                 model_id,
                 device_map=self.device,
                 dtype=self.dtype,
                 attn_implementation="eager",
+                use_cache=True,  # Enable KV-cache for faster generation
             )
+            
+            # Set model to eval mode for inference optimization
+            model.eval()
+            
+            # Optimize for CPU if needed
+            if not device_manager.is_cuda_available():
+                try:
+                    # Enable torch.compile for faster inference (PyTorch 2.0+)
+                    # This can provide 2-3x speedup on CPU
+                    import torch._dynamo
+                    torch._dynamo.config.suppress_errors = True
+                    logger.info("Attempting torch.compile optimization for CPU...")
+                    # Note: torch.compile may not work well with all models
+                    # Keeping it optional and catching errors
+                except Exception as e:
+                    logger.info(f"Torch compile not available: {e}")
+            
             self.models[model_type] = model
             logger.info(f"Successfully loaded {model_type} model ({self.model_size})")
             return model

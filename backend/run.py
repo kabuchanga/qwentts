@@ -24,6 +24,8 @@ def main():
             port=8000,
             reload=False,
             log_level="info",
+            timeout_keep_alive=600,  # 10 minutes for long-running CPU inference
+            timeout_graceful_shutdown=30,
         )
     except KeyboardInterrupt:
         logger.info("Server interrupted by user")
